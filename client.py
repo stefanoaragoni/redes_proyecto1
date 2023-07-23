@@ -1,5 +1,7 @@
 
+import time
 from server import Server, ServerUser
+import prettytable
 import threading
 
 class Client():
@@ -32,14 +34,13 @@ class Client():
         print("1) Mostrar todos los contactos y su estado")
         print("2) Agregar un usuario a los contactos")
         print("3) Mostrar detalles de contacto de un usuario")
-        print("4) Comunicación 1 a 1 con cualquier usuario/contacto")
-        print("5) Participar en conversaciones grupales")
+        print("4) Escribirle a usuario/contacto")
+        print("5) Conversaciones grupales")
         print("6) Definir mensaje de presencia")
         print("7) Enviar notificaciones")
         print("8) Enviar archivos")
-        print("9) Cerrar sesión con una cuenta")
+        print("9) Cerrar sesión")
         print("10) Eliminar la cuenta del servidor")
-        print("11) Volver al menú principal\n")
 
         while True:
             try:
@@ -94,6 +95,9 @@ class Client():
                     self.xmpp_thread = threading.Thread(target=self.server.process, kwargs={'forever': True})
                     self.xmpp_thread.start()
 
+                    while not self.server.logged_in:
+                        pass
+
                     success = True
                     print("\n--> ¡Inicio de sesión exitoso!")
                         
@@ -111,43 +115,63 @@ class Client():
                 if opcion_comunicacion == 1:
                     # Mostrar todos los contactos y su estado
                     connections = self.server.get_connections()
-                    print("\n----- CONTACTOS -----")
-                    for connection in connections:
-                        print(f"{connection[0]} - {connection[1]}")
-                    print("----------------------\n")
+                    print("\n----- CONTACTOS -----\n")
+
+                    if len(connections) == 0:
+                        print("No tienes contactos.")
+
+                    else:
+                        table = prettytable.PrettyTable()
+                        table.field_names = ["Usuario", "Estado"]
+
+                        for connection in connections:
+                            table.add_row([connection[0], connection[1]])
+
+                        print(table)
+                            
+                    print("\n----------------------\n")
+                    time.sleep(2)
 
                 elif opcion_comunicacion == 2:
                     # Agregar un usuario a los contactos
-                    pass
+                    time.sleep(2)
+
                 elif opcion_comunicacion == 3:
                     # Mostrar detalles de contacto de un usuario
-                    pass
+                    time.sleep(2)
+
                 elif opcion_comunicacion == 4:
                     user_input = input("Type a message to send: ")
                     recipient_jid = "maldonado20261@alumchat.xyz"
 
                     self.server.send_message_to_user(recipient_jid, user_input)
+                    time.sleep(2)
 
                 elif opcion_comunicacion == 5:
                     # Participar en conversaciones grupales
-                    pass
+                    time.sleep(2)
+                    
                 elif opcion_comunicacion == 6:
                     # Definir mensaje de presencia
-                    pass
+                    time.sleep(2)
+
                 elif opcion_comunicacion == 7:
                     # Enviar/recibir notificaciones
-                    pass
+                    time.sleep(2)
+
                 elif opcion_comunicacion == 8:
                     # Enviar/recibir archivos
-                    pass
+                    time.sleep(2)
+
                 elif opcion_comunicacion == 9:
                     # Cerrar sesión con una cuenta
-                    pass
+                    self.xmpp_thread.join()
+                    time.sleep(2)
+
                 elif opcion_comunicacion == 10:
                     # Eliminar la cuenta del servidor
-                    pass
-                elif opcion_comunicacion == 11:
                     self.xmpp_thread.join()
-                    break
+                    time.sleep(2)
+
                 else:
                     print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 11.")
