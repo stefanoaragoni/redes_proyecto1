@@ -64,7 +64,6 @@ class Client():
             else:
                 print("\n--> Usuario y/o contraseña inválidos. Por favor, ingrese valores no vacíos.")
 
-
     def main(self):
         while True:
             opcion_principal = 0
@@ -86,25 +85,20 @@ class Client():
 
                 elif opcion_principal == 2:
                     # Iniciar sesión con una cuenta
-                    usuario, contrasena = self.solicitar_usuario_contrasena()
+                    #usuario, contrasena = self.solicitar_usuario_contrasena()
+                    usuario = "alberto20261@alumchat.xyz"
+                    contrasena = "Onika1009!"
                     self.server = Server(usuario, contrasena)
 
-                    if self.server.login():
-                        print("\n--> ¡Inicio de sesión exitoso!")
-                        success = True
+                    self.server.connect(disable_starttls=True)
+                    self.xmpp_thread = threading.Thread(target=self.server.process, kwargs={'forever': True})
+                    self.xmpp_thread.start()
 
-                        xmpp_thread = threading.Thread(target=self.server.process_init)
-                        xmpp_thread.start()
-                        print("XMPP client is now running in the background.")
-                        
-                    else:
-                        print("\n--> ¡Inicio de sesión fallido!")
-                        opcion_principal = 0
-                        
+                    success = True
+                    print("\n--> ¡Inicio de sesión exitoso!")
                         
                 elif opcion_principal == 3:
                     print("\n--> ¡Hasta luego!")
-                    success = True
                     exit()
                 else:
                     print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 3.")
@@ -116,7 +110,12 @@ class Client():
 
                 if opcion_comunicacion == 1:
                     # Mostrar todos los contactos y su estado
-                    pass
+                    connections = self.server.get_connections()
+                    print("\n----- CONTACTOS -----")
+                    for connection in connections:
+                        print(f"{connection[0]} - {connection[1]}")
+                    print("----------------------\n")
+
                 elif opcion_comunicacion == 2:
                     # Agregar un usuario a los contactos
                     pass
@@ -127,14 +126,8 @@ class Client():
                     user_input = input("Type a message to send: ")
                     recipient_jid = "maldonado20261@alumchat.xyz"
 
-                    if user_input.lower() == "exit":
-                        # Properly disconnect the XMPP client and end the background thread
-                        self.server.disconnect(wait=True)
-                        xmpp_thread.join()
-                        break
-                    else:
-                        self.server.send_xmpp_message(recipient_jid, user_input)
-                    pass
+                    self.server.send_message_to_user(recipient_jid, user_input)
+
                 elif opcion_comunicacion == 5:
                     # Participar en conversaciones grupales
                     pass
@@ -154,6 +147,7 @@ class Client():
                     # Eliminar la cuenta del servidor
                     pass
                 elif opcion_comunicacion == 11:
+                    self.xmpp_thread.join()
                     break
                 else:
                     print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 11.")

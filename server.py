@@ -1,33 +1,28 @@
-import xmpp
-from sleekxmpp import ClientXMPP
+import slixmpp
+import logging
 
-class Server(ClientXMPP):
+class Server(slixmpp.ClientXMPP):
 
     def __init__(self, jid, password):
         super().__init__(jid, password)
         self.add_event_handler("session_start", self.start)
+        self.add_event_handler("message", self.message)
+        self.logged_in = False
 
-    def start(self, event):
-        self.send_presence()
-        self.get_roster()
+    async def start(self, event):
+        try:
+            self.send_presence()
+            self.get_roster()
+            self.logged_in = True
 
-    def process_init(self):
-        self.process(threaded=True)
-        
-    def login(self):
-        if self.connect():
-            return True
-        else:
-            return False
-        
+        except Exception as e:
+            print(f"Error: {e}")
+
     def message(self, msg):
         if msg['type'] in ('chat', 'normal'):
             print(f"Received message from {msg['from']}: {msg['body']}")
 
-    def send_xmpp_message(self, recipient, message):
-        self.send_message(mto=recipient, mbody=message, mtype='chat')
-
-
+import xmpp
 class ServerUser():
 
     def register(self, username, password):
