@@ -11,6 +11,7 @@ class Server(slixmpp.ClientXMPP):
         super().__init__(jid, password)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("message", self.message)
+        self.add_event_handler("presence", self.request_handler)
         self.logged_in = False
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -40,19 +41,49 @@ class Server(slixmpp.ClientXMPP):
             table.field_names = ["Usuario", "Mensaje"]
             table.add_row([person, msg['body']])                       # Agregar emisor y mensaje a la tabla
             
-            print("\n\n----- NUEVO MENSAJE -----\n")
+            print("\n\n----- NUEVO MENSAJE -----")
             print(table)
-            print("\n----------------------\n")
+            print("----------------------\n")
 
         elif msg['type'] == 'groupchat':
             table = prettytable.PrettyTable()                               # Crear una tabla para mostrar el mensaje
             table.field_names = ["Usuario", "Grupo", "Mensaje"]
             table.add_row([person, msg['mucroom'], msg['body']])       # Agregar emisor, grupo y mensaje a la tabla
             
-            print("\n\n----- NUEVO MENSAJE -----\n")
+            print("\n\n----- NUEVO MENSAJE -----")
             print(table)
-            print("\n----------------------\n")
+            print("----------------------\n")
 
+
+    #-------------------------------------------------------------------------------------------------------------------
+    '''
+    send_friend_request: Función que envía una solicitud de amistad a un usuario.
+    '''
+
+    def send_friend_request(self, recipient_jid):
+        self.send_presence(pto=recipient_jid, ptype='subscribe')
+        
+    #-------------------------------------------------------------------------------------------------------------------
+    '''
+    request_handler: Revisa si la presence subscription fue aceptada o rechazada.
+    '''
+
+    async def request_handler(self, presence):
+        # Si usuario envio solicitud de amistad
+        if presence['type'] == 'subscribe':
+            # Aceptar solicitud de amistad automáticamente
+            self.send_presence(pto=presence['from'], ptype='subscribed')
+
+            print("\n\n----- SOLICITUD DE AMISTAD -----")
+            print(f"--> Se ha agregado a {presence['from']} a tus contactos.")
+            print("----------------------\n") 
+
+        # Si usuario rechazo solicitud de amistad
+        elif presence['type'] == 'unsubscribed':
+            print("\n\n----- SOLICITUD DE AMISTAD -----")
+            print(f"--> {presence['from']} ha rechazado tu solicitud de amistad / te eliminó de sus contactos.")
+            print("----------------------\n") 
+            self.send_presence(pto=presence['from'], ptype='unsubscribe')
 
     #-------------------------------------------------------------------------------------------------------------------
 
@@ -81,6 +112,8 @@ class Server(slixmpp.ClientXMPP):
                         show = "No molestar"
                     elif show == "unavailable":                             # Si el contacto no está disponible
                         show = "No disponible"
+                    else:
+                        show = "Conectado"
 
                     connections.append((jid, show))
 
