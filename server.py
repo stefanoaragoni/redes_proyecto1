@@ -1,5 +1,52 @@
 import slixmpp
 import prettytable
+import xmpp
+import asyncio
+import time
+import client
+import curio
+import aioconsole 
+
+# *********************************************************************************************************************
+# ░██████╗██╗░██████╗░███╗░░██╗  ██╗░░░██╗██████╗░
+# ██╔════╝██║██╔════╝░████╗░██║  ██║░░░██║██╔══██╗
+# ╚█████╗░██║██║░░██╗░██╔██╗██║  ██║░░░██║██████╔╝
+# ░╚═══██╗██║██║░░╚██╗██║╚████║  ██║░░░██║██╔═══╝░
+# ██████╔╝██║╚██████╔╝██║░╚███║  ╚██████╔╝██║░░░░░
+# ╚═════╝░╚═╝░╚═════╝░╚═╝░░╚══╝  ░╚═════╝░╚═╝░░░░░
+# *********************************************************************************************************************
+
+class ServerUser():
+
+    '''
+    register: Función que registra un usuario en el servidor con librería xmpp.
+    '''
+
+    def register(self, username, password):
+        jid = xmpp.protocol.JID(username)
+        self.xmpp_client = xmpp.Client(jid.getDomain(), debug=[]) 
+
+        if not self.xmpp_client.connect():
+            print("Failed to connect to the XMPP server.")
+            return False
+
+        result = bool(xmpp.features.register(self.xmpp_client, jid.getDomain(), {'username': jid.getNode(), 'password': password}))
+
+        if result:
+            return True
+        else:
+            return False
+        
+
+# *********************************************************************************************************************
+# ██╗░░░░░░█████╗░░██████╗░  ██╗███╗░░██╗
+# ██║░░░░░██╔══██╗██╔════╝░  ██║████╗░██║
+# ██║░░░░░██║░░██║██║░░██╗░  ██║██╔██╗██║
+# ██║░░░░░██║░░██║██║░░╚██╗  ██║██║╚████║
+# ███████╗╚█████╔╝╚██████╔╝  ██║██║░╚███║
+# ╚══════╝░╚════╝░░╚═════╝░  ╚═╝╚═╝░░╚══╝
+# *********************************************************************************************************************
+        
 
 class Server(slixmpp.ClientXMPP):
 
@@ -13,21 +60,7 @@ class Server(slixmpp.ClientXMPP):
         self.add_event_handler("message", self.message)
         self.add_event_handler("presence", self.request_handler)
         self.logged_in = False
-
-    #-------------------------------------------------------------------------------------------------------------------
-    '''
-    start: Función que se ejecuta al iniciar sesión en el servidor de forma asincrónica.
-    '''
-
-    async def start(self, event):
-        try:
-            self.send_presence()                                            # Enviar presencia  
-            self.get_roster()                                               # Obtener roster           
-            self.logged_in = True                                           # Cambiar el estado de logged_in a True
-
-        except Exception as e:
-            print(f"Error: {e}")
-
+        
     #-------------------------------------------------------------------------------------------------------------------
     '''
     message: Función que se ejecuta de forma asincrónica al recibir un mensaje.
@@ -60,7 +93,7 @@ class Server(slixmpp.ClientXMPP):
     send_friend_request: Función que envía una solicitud de amistad a un usuario.
     '''
 
-    def send_friend_request(self, recipient_jid):
+    async def send_friend_request(self, recipient_jid):
         self.send_presence(pto=recipient_jid, ptype='subscribe')
         
     #-------------------------------------------------------------------------------------------------------------------
@@ -87,7 +120,8 @@ class Server(slixmpp.ClientXMPP):
 
     #-------------------------------------------------------------------------------------------------------------------
 
-    def get_connections(self):
+    async def get_connections(self):
+        await self.get_roster()
         roster = self.client_roster                                         # Obtener el roster del usuario actual
         connections = []
         
@@ -117,35 +151,151 @@ class Server(slixmpp.ClientXMPP):
 
                     connections.append((jid, show))
 
-        return connections                                                  # Devolver una lista de tuplas (jid, tipo de presencia)
-    
+        print("\n----- CONTACTOS -----")
 
-# *********************************************************************************************************************
-# *********************************************************************************************************************
-# *********************************************************************************************************************
+        if len(connections) == 0:
+            print("No tienes contactos.")
 
-
-import xmpp
-class ServerUser():
-
-    '''
-    register: Función que registra un usuario en el servidor con librería xmpp.
-    '''
-
-    def register(self, username, password):
-        jid = xmpp.protocol.JID(username)
-        self.xmpp_client = xmpp.Client(jid.getDomain(), debug=[]) 
-
-        if not self.xmpp_client.connect():
-            print("Failed to connect to the XMPP server.")
-            return False
-
-        result = bool(xmpp.features.register(self.xmpp_client, jid.getDomain(), {'username': jid.getNode(), 'password': password}))
-
-        if result:
-            return True
         else:
-            return False
+            table = prettytable.PrettyTable()
+            table.field_names = ["Usuario", "Estado"]
+
+            for connection in connections:
+                table.add_row([connection[0], connection[1]])
+
+            print(table)
+                
+        print("----------------------\n")
+
+#-------------------------------------------------------------------------------------------------------------------
+# ░██████╗████████╗░█████╗░██████╗░████████╗
+# ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗╚══██╔══╝
+# ╚█████╗░░░░██║░░░███████║██████╔╝░░░██║░░░
+# ░╚═══██╗░░░██║░░░██╔══██║██╔══██╗░░░██║░░░
+# ██████╔╝░░░██║░░░██║░░██║██║░░██║░░░██║░░░
+# ╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝░░░╚═╝░░░
+#-------------------------------------------------------------------------------------------------------------------
+    '''
+    start: Función que se ejecuta al iniciar sesión en el servidor de forma asincrónica.
+    '''
+
+    async def start(self, event):
+        try:
+            self.send_presence()                                            # Enviar presencia  
+            self.get_roster()                                               # Obtener roster           
+            self.logged_in = True                                           # Cambiar el estado de logged_in a True
+
+            # asyncio create thread that concurrently runs the xmpp_menu function
+            xmpp_menu_task = asyncio.create_task(self.xmpp_menu())
+            await xmpp_menu_task
+
+            
+
+        except Exception as e:
+            print(f"Error: {e}")
+
+#-------------------------------------------------------------------------------------------------------------------
+# ███╗░░░███╗███████╗███╗░░██╗██╗░░░██╗
+# ████╗░████║██╔════╝████╗░██║██║░░░██║
+# ██╔████╔██║█████╗░░██╔██╗██║██║░░░██║
+# ██║╚██╔╝██║██╔══╝░░██║╚████║██║░░░██║
+# ██║░╚═╝░██║███████╗██║░╚███║╚██████╔╝
+# ╚═╝░░░░░╚═╝╚══════╝╚═╝░░╚══╝░╚═════╝░
+#-------------------------------------------------------------------------------------------------------------------
+    '''
+    xmpp_menu: Función que muestra el menú de comunicación y ejecuta las funciones correspondientes a cada opción.
+    '''
+
+    async def xmpp_menu(self):
+
+        opcion_comunicacion = 0
+        while opcion_comunicacion != 9:
+            opcion_comunicacion = await self.mostrar_menu_comunicacion()
+
+            if opcion_comunicacion == 1:
+                # Mostrar todos los contactos y su estado
+                await self.get_connections()
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 2:
+                # Agregar un usuario a tus contactos
+
+                print("\n----- AGREGAR CONTACTO -----")
+                recipient_jid = self.solicitar_usuario()
+                self.send_friend_request(recipient_jid)
+                print(f"Se ha enviado una solicitud de contacto a {recipient_jid}.")
+                print("----------------------\n") 
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 3:
+                # Mostrar detalles de contacto de un usuario
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 4:
+                recipient_jid = self.solicitar_usuario()
+                user_input = await aioconsole.ainput("Mensaje: ")
+
+                self.send_message(mto=recipient_jid, mbody=user_input, mtype='chat')
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 5:
+                # Participar en conversaciones grupales
+                await asyncio.sleep(1)
+                
+            elif opcion_comunicacion == 6:
+                # Definir mensaje de presencia
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 7:
+                # Enviar/recibir notificaciones
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 8:
+                # Enviar/recibir archivos
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 9:
+                # Cerrar sesión con una cuenta
+                self.disconnect()
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 10:
+                # Eliminar la cuenta del servidor
+                await asyncio.sleep(1)
+
+            else:
+                print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 11.\n")
+                await asyncio.sleep(1)
 
 
- 
+    async def mostrar_menu_comunicacion(self):
+            print("\n----- MENÚ DE COMUNICACIÓN -----")
+            print("1) Mostrar todos los contactos y su estado")
+            print("2) Agregar un usuario a tus contactos")
+            print("3) Mostrar detalles de contacto de un usuario")
+            print("4) Escribirle a usuario/contacto")
+            print("5) Conversaciones grupales")
+            print("6) Definir mensaje de presencia")
+            print("7) Enviar notificaciones")
+            print("8) Enviar archivos")
+            print("9) Cerrar sesión")
+            print("10) Eliminar la cuenta del servidor")
+
+            while True:
+                try:
+                    opcion = int(await aioconsole.ainput("Ingrese el número de la opción deseada: "))
+                    if opcion in range(1, 12):
+                        return opcion
+                    else:
+                        print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 11.\n")
+                except ValueError:
+                    print("\n--> Entrada inválida. Por favor, ingrese un número entero.\n")
+
+    async def solicitar_usuario(self):
+        while True:
+            usuario = await aioconsole.ainput("Ingrese el nombre de usuario: ")
+            if usuario != "":
+                usuario = usuario.split("@")[0] + "@alumchat.xyz"
+                return usuario
+            else:
+                print("\n--> Usuario inválido. Por favor, ingrese un valor no vacío.")
