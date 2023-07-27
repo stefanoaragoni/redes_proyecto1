@@ -56,11 +56,18 @@ class Server(slixmpp.ClientXMPP):
 
     def __init__(self, jid, password):
         super().__init__(jid, password)
+        self.register_plugin('xep_0030')                                   # Registrar plugin: Service Discovery
+        self.register_plugin('xep_0045')                                   # Registrar plugin: Multi-User Chat
+        self.register_plugin('xep_0085')                                   # Registrar plugin: Chat State Notifications
+        self.register_plugin('xep_0199')                                   # Registrar plugin: XMPP Ping
+
         self.add_event_handler("session_start", self.start)
-        self.add_event_handler("muc::invitation", self.handle_group_chat_invite)
         self.add_event_handler("message", self.message)
         self.add_event_handler("changed_status", self.changed_status)
         self.add_event_handler("presence", self.request_handler)
+        self.add_event_handler("muc::message", self.group_message)
+        self.add_event_handler("groupchat_invite", self.handle_group_chat_invite)
+
         self.logged_in = False
         
     #-------------------------------------------------------------------------------------------------------------------
@@ -80,14 +87,18 @@ class Server(slixmpp.ClientXMPP):
             print(table)
             print("-------------------------")
 
-        elif msg['type'] == 'groupchat':
-            table = prettytable.PrettyTable()                               # Crear una tabla para mostrar el mensaje
-            table.field_names = ["Usuario", "Grupo", "Mensaje"]
-            table.add_row([person, msg['mucroom'], msg['body']])       # Agregar emisor, grupo y mensaje a la tabla
-            
-            print("\n\n----- NUEVO MENSAJE -----")
-            print(table)
-            print("-------------------------")
+    #-------------------------------------------------------------------------------------------------------------------
+    '''
+    group_message: Función que se ejecuta de forma asincrónica al recibir un mensaje de un grupo.
+    '''
+
+    async def group_message(self, msg):
+        if msg['mucnick'] != self.boundjid.user:
+            print("\n\n----- MENSAJE DE GRUPO -----")
+            print(f"Grupo: {msg['from']}")
+            print(f"De: {msg['mucnick']}")
+            print(f"Mensaje: {msg['body']}")
+            print("--------------------------------")
 
     #-------------------------------------------------------------------------------------------------------------------
     '''
