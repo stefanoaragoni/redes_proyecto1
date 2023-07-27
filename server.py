@@ -78,7 +78,7 @@ class Server(slixmpp.ClientXMPP):
             
             print("\n\n----- NUEVO MENSAJE -----")
             print(table)
-            print("-------------------------\n")
+            print("-------------------------")
 
         elif msg['type'] == 'groupchat':
             table = prettytable.PrettyTable()                               # Crear una tabla para mostrar el mensaje
@@ -87,7 +87,7 @@ class Server(slixmpp.ClientXMPP):
             
             print("\n\n----- NUEVO MENSAJE -----")
             print(table)
-            print("-------------------------\n")
+            print("-------------------------")
 
     #-------------------------------------------------------------------------------------------------------------------
     '''
@@ -109,7 +109,7 @@ class Server(slixmpp.ClientXMPP):
             # Rechazar invitación
             print(f"--> Has rechazado la invitación al grupo {invitation['from']}.")
 
-        print("--------------------------------\n")
+        print("--------------------------------")
 
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -128,7 +128,7 @@ class Server(slixmpp.ClientXMPP):
             self.send_presence(pto=recipient_jid, ptype='subscribe')
             print(f"--> Se ha enviado una solicitud de contacto a {recipient_jid}.")
 
-        print("----------------------------\n") 
+        print("----------------------------") 
         
     #-------------------------------------------------------------------------------------------------------------------
     '''
@@ -143,13 +143,13 @@ class Server(slixmpp.ClientXMPP):
 
             print("\n\n----- SOLICITUD DE AMISTAD -----")
             print(f"--> Se ha agregado a {presence['from']} a tus contactos.")
-            print("--------------------------------\n") 
+            print("--------------------------------") 
 
         # Si usuario rechazo solicitud de amistad
         elif presence['type'] == 'unsubscribed':
             print("\n\n----- SOLICITUD DE AMISTAD -----")
             print(f"--> {presence['from']} ha rechazado tu solicitud de amistad / te eliminó de sus contactos.")
-            print("--------------------------------\n") 
+            print("--------------------------------") 
             self.send_presence(pto=presence['from'], ptype='unsubscribe')
 
     #--------------------------------------------------------------------------------------------------------------------
@@ -158,40 +158,32 @@ class Server(slixmpp.ClientXMPP):
     '''
 
     async def changed_status(self, presence):
-        # Si un usuario se conecta o desconecta
-        if presence['type'] == 'available' or presence['type'] == 'unavailable' or presence['type'] == 'xa' or presence['type'] == 'away' or presence['type'] == 'dnd':
-            jid = presence['from'].bare
-            show = presence['type']
+        jid = presence['from'].bare
+        show = presence['type']
+        status = presence['status']
 
-            if jid != self.boundjid.bare:                             # Si el contacto no el usuario actual
+        if jid != self.boundjid.bare:                             # Si el contacto no el usuario actual
 
-                if show == 'available':                                 # Si el contacto está chateando
-                    show = "Conectado"
-                elif show == "away":                                    # Si el contacto está ausente
-                    show = "Ausente"
-                elif show == "xa":                                      # Si el contacto está ausente por un tiempo largo
-                    show = "Ausente por un tiempo largo"
-                elif show == "dnd":                                     # Si el contacto no quiere ser molestado
-                    show = "No molestar"
-                elif show == "unavailable":                             # Si el contacto no está disponible
-                    show = "Desconectado"
+            if show == 'available':                                 # Si el contacto está chateando
+                show = "Conectado"
+            elif show == "away":                                    # Si el contacto está ausente
+                show = "Ausente"
+            elif show == "xa":                                      # Si el contacto está ausente por un tiempo largo
+                show = "Ausente por un tiempo largo"
+            elif show == "dnd":                                     # Si el contacto no quiere ser molestado
+                show = "No molestar"
+            elif show == "unavailable":                             # Si el contacto no está disponible
+                show = "Desconectado"
 
+            print("\n\n----- NOTIFICACION: ESTADO / MENSAJE -----")
 
-                print("\n\n----- NOTIFICACION: ESTADO DE CONTACTO -----")
-                print(f"--> El estado de {jid} ha cambiado: {show}.")
-                print("--------------------------------------------\n")            
+            if status == "":
+                print(f"-Usuario: {jid}\n-Estado: {show}")
+            else:
+                print(f"-Usuario: {jid}\n-Estado: {show}\n-Mensaje: {status}")
 
-        # Si un usuario se pone un mensaje de presencia / status
-        elif presence['type'] == 'status':
-            jid = presence['from'].bare
-            show = presence['status']
-
-            if jid != self.boundjid.bare:                             # Si el contacto no el usuario actual
-
-                print("\n\n----- NOTIFICACION: STATUS -----")
-                print(f"--> {jid}: {show}.")
-                print("---------------------------------\n")
-
+            print("------------------------------------------")       
+        
     #-------------------------------------------------------------------------------------------------------------------
     '''
     get_connections: Función que obtiene los contactos del usuario actual y su estado.
@@ -252,7 +244,7 @@ class Server(slixmpp.ClientXMPP):
 
             print(table)
                 
-        print("---------------------\n")
+        print("---------------------")
 
     #-------------------------------------------------------------------------------------------------------------------
     '''
@@ -303,7 +295,7 @@ class Server(slixmpp.ClientXMPP):
         else:
             print("--> No tienes un contacto con ese nombre.")
 
-        print("------------------------------\n")
+        print("------------------------------")
 
     #-------------------------------------------------------------------------------------------------------------------
     '''
@@ -317,7 +309,7 @@ class Server(slixmpp.ClientXMPP):
 
         self.send_message(mto=recipient_jid, mbody=user_input, mtype='chat')
         print(f"--> Mensaje enviado a {recipient_jid}.")
-        print("----------------------\n")
+        print("----------------------")
 
 
 #-------------------------------------------------------------------------------------------------------------------
@@ -360,6 +352,12 @@ class Server(slixmpp.ClientXMPP):
     '''
 
     async def xmpp_menu(self):
+
+        print("\n--> Sesión iniciada. Bienvenidx.\n\n")
+
+        print("---------- MENSAJES / NOTIFICACIONES ----------")
+        await asyncio.sleep(3)
+        print("\n\n-----------------------------------------------\n")
 
         opcion_comunicacion = 0
         while opcion_comunicacion != 9:
