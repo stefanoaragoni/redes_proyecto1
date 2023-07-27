@@ -27,6 +27,7 @@ class Client():
             except ValueError:
                 print("\n--> Entrada inválida. Por favor, ingrese un número entero.\n")
 
+
     def solicitar_usuario_contrasena(self):
         while True:
             usuario = input("\nIngrese su nombre de usuario: ")
