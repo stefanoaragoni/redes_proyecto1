@@ -19,7 +19,7 @@ import aioconsole
 class ServerUser():
 
     '''
-    register: Función que registra un usuario en el servidor con librería xmpp.
+    register: Función que registra un usuario en el servidor con librería xmpp
     '''
 
     def register(self, username, password):
