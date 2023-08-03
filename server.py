@@ -2,10 +2,9 @@ import slixmpp
 import prettytable
 import xmpp
 import asyncio
-import time
-import client
-import curio
 import aioconsole 
+from slixmpp.exceptions import IqError, IqTimeout
+from slixmpp.xmlstream import ElementBase, ET, register_stanza_plugin
 
 # *********************************************************************************************************************
 # ░██████╗██╗░██████╗░███╗░░██╗  ██╗░░░██╗██████╗░
@@ -31,7 +30,7 @@ class ServerUser():
             return False
 
         result = bool(xmpp.features.register(self.xmpp_client, jid.getDomain(), {'username': jid.getNode(), 'password': password}))
-
+        
         if result:
             return True
         else:
@@ -62,6 +61,9 @@ class Server(slixmpp.ClientXMPP):
         self.register_plugin('xep_0085')                                   # Registrar plugin: Chat State Notifications
         self.register_plugin('xep_0199')                                   # Registrar plugin: XMPP Ping
 
+        #-----> Stanza
+        self.register_stanza(self.delete_account)
+
         #-----> Handlers de eventos
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("message", self.message)
@@ -69,6 +71,7 @@ class Server(slixmpp.ClientXMPP):
         self.add_event_handler("presence", self.request_handler)
         self.add_event_handler("muc::message", self.group_message)
         self.add_event_handler("groupchat_invite", self.handle_group_chat_invite)
+
 
         self.logged_in = False
         
@@ -357,6 +360,16 @@ class Server(slixmpp.ClientXMPP):
         # Menu - Definir mensaje o estado
 
 
+    '''
+    delete_account: Función que elimina la cuenta del servidor.
+    '''
+
+    async def delete_account(self):
+        
+
+        pass
+        
+
 #-------------------------------------------------------------------------------------------------------------------
 # ░██████╗████████╗░█████╗░██████╗░████████╗
 # ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗╚══██╔══╝
@@ -449,7 +462,7 @@ class Server(slixmpp.ClientXMPP):
 
             elif opcion_comunicacion == 9:
                 # Eliminar la cuenta del servidor
-                print("\n--> Cuenta eliminada. Hasta luego.")
+                await self.delete_account()
                 await asyncio.sleep(1)
 
             else:
