@@ -1,3 +1,4 @@
+import time
 import slixmpp
 import prettytable
 import xmpp
@@ -60,6 +61,7 @@ class Server(slixmpp.ClientXMPP):
         self.register_plugin('xep_0045')                                   # Registrar plugin: Multi-User Chat
         self.register_plugin('xep_0085')                                   # Registrar plugin: Chat State Notifications
         self.register_plugin('xep_0199')                                   # Registrar plugin: XMPP Ping
+        #-------------------------------
 
         #-----> Stanza
         self.register_stanza(self.delete_account)
@@ -365,9 +367,29 @@ class Server(slixmpp.ClientXMPP):
     '''
 
     async def delete_account(self):
-        
+        iq = self.Iq()
+        iq['type'] = 'set'
+        iq['from'] = self.boundjid.user
+    
+        # ---> Generado por GitHub Copilot
+        query = ET.Element('{jabber:iq:register}query')
+        remove_element = ET.SubElement(query, 'remove')
+        iq.append(query)
+        # ------------------------------
 
-        pass
+        try:
+            response = await iq.send()
+            print("Eliminando cuenta...")
+            time.sleep(3)
+
+            if response['type'] == 'result':
+                self.disconnect()
+                print("\n--> Cuenta eliminada. Hasta luego.")
+                exit()
+            else:
+                print("\n--> No se pudo eliminar la cuenta.")
+        except (IqError, IqTimeout) as e:
+            print("\n--> No se pudo eliminar la cuenta.")
         
 
 #-------------------------------------------------------------------------------------------------------------------
