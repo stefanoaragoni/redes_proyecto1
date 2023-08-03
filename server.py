@@ -56,11 +56,13 @@ class Server(slixmpp.ClientXMPP):
 
     def __init__(self, jid, password):
         super().__init__(jid, password)
+        #-----> Plugins generados por GitHub Copilot
         self.register_plugin('xep_0030')                                   # Registrar plugin: Service Discovery
         self.register_plugin('xep_0045')                                   # Registrar plugin: Multi-User Chat
         self.register_plugin('xep_0085')                                   # Registrar plugin: Chat State Notifications
         self.register_plugin('xep_0199')                                   # Registrar plugin: XMPP Ping
 
+        #-----> Handlers de eventos
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("message", self.message)
         self.add_event_handler("changed_status", self.changed_status)
@@ -322,6 +324,38 @@ class Server(slixmpp.ClientXMPP):
         print(f"--> Mensaje enviado a {recipient_jid}.")
         print("----------------------")
 
+    '''
+    set_presence: Función que define el mensaje de presencia del usuario.
+    '''
+
+    async def set_presence(self):
+        opcion = await self.mostrar_menu_estado()
+
+        if opcion == 1:
+            mensaje = await aioconsole.ainput("Ingrese el mensaje de presencia: ")
+            self.send_presence(pstatus=mensaje)
+
+            print("\n--> Mensaje de presencia modificado.")
+
+        elif opcion == 2:
+            estado = await self.solicitar_estado()
+            if estado == 1:
+                self.send_presence(pshow="chat")
+            elif estado == 2:
+                self.send_presence(pshow="away")
+            elif estado == 3:
+                self.send_presence(pshow="xa")
+            elif estado == 4:
+                self.send_presence(pshow="dnd")
+            elif estado == 5:
+                self.send_presence(pshow="unavailable")
+
+            print("\n--> Estado modificado.")
+
+        print("----------------------")
+        
+        # Menu - Definir mensaje o estado
+
 
 #-------------------------------------------------------------------------------------------------------------------
 # ░██████╗████████╗░█████╗░██████╗░████████╗
@@ -400,6 +434,7 @@ class Server(slixmpp.ClientXMPP):
                 
             elif opcion_comunicacion == 6:
                 # Definir mensaje de presencia
+                await self.set_presence()
                 await asyncio.sleep(1)
 
             elif opcion_comunicacion == 7:
@@ -437,7 +472,7 @@ class Server(slixmpp.ClientXMPP):
             while True:
                 try:
                     opcion = int(await aioconsole.ainput("Ingrese el número de la opción deseada: "))
-                    if opcion in range(1, 9):
+                    if opcion in range(1, 10):
                         return opcion
                     else:
                         print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 9.\n")
@@ -467,5 +502,35 @@ class Server(slixmpp.ClientXMPP):
             except ValueError:
                 print("\n--> Entrada inválida. Por favor, ingrese un número entero.\n")
 
+    async def mostrar_menu_estado(self):
+        print("\n----- MENÚ DE MENSAJE DE PRESENCIA -----")
+        print("1) Modificar mensaje")
+        print("2) Modificar estado")
 
+        while True:
+            try:
+                opcion = int(await aioconsole.ainput("Ingrese el número de la opción deseada: "))
+                if opcion in range(1, 3):
+                    return opcion
+                else:
+                    print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 2.\n")
+            except ValueError:
+                print("\n--> Entrada inválida. Por favor, ingrese un número entero.\n")
 
+    async def solicitar_estado(self):
+        print("\n--> Estados disponibles:")
+        print("1) Conectado")
+        print("2) Ausente")
+        print("3) Ausente por un tiempo largo")
+        print("4) No molestar")
+        print("5) Desconectado")
+
+        while True:
+            try:
+                opcion = int(await aioconsole.ainput("Ingrese el número de la opción deseada: "))
+                if opcion in range(1, 6):
+                    return opcion
+                else:
+                    print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 5.\n")
+            except ValueError:
+                print("\n--> Entrada inválida. Por favor, ingrese un número entero.\n")
