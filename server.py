@@ -71,7 +71,7 @@ class Server(slixmpp.ClientXMPP):
         self.add_event_handler("message", self.message)
         self.add_event_handler("changed_status", self.changed_status)
         self.add_event_handler("presence", self.request_handler)
-        self.add_event_handler("muc::message", self.group_message)
+        self.add_event_handler("groupchat_message", self.group_message)
 
         self.logged_in = False
         
@@ -100,7 +100,7 @@ class Server(slixmpp.ClientXMPP):
     async def group_message(self, msg):
         if msg['mucnick'] != self.boundjid.user:
             print("\n\n----- MENSAJE DE GRUPO -----")
-            print(f"Grupo: {msg['from']}")
+            print(f"Grupo: {str(msg['from']).split('/')[0]}")
             print(f"De: {msg['mucnick']}")
             print(f"Mensaje: {msg['body']}")
             print("--------------------------------")
@@ -155,6 +155,9 @@ class Server(slixmpp.ClientXMPP):
         show = presence['type']
         status = presence['status']
 
+        if "@conference.alumchat.xyz" in jid:
+            return
+
         if jid != self.boundjid.bare:                             # Si el contacto no el usuario actual
 
             if show == 'available':                                 # Si el contacto está chateando
@@ -189,7 +192,7 @@ class Server(slixmpp.ClientXMPP):
         
         for jid in roster.keys():                                           # Por cada contacto en el roster
             
-            if jid != self.boundjid.bare:                                   # Si el contacto no es el usuario actual
+            if jid != self.boundjid.bare and "@conference.alumchat.xyz" not in jid: # Si el contacto no es el usuario actual
 
                 obj_jid = roster[jid]                                       # Obtener el objeto del contacto
                 resources = obj_jid.resources
@@ -367,6 +370,52 @@ class Server(slixmpp.ClientXMPP):
         except (IqError, IqTimeout) as e:
             print("\n--> No se pudo eliminar la cuenta.")
         
+    #-------------------------------------------------------------------------------------------------------------------
+    '''
+    create_group: Función que crea un grupo.
+    '''
+
+    async def create_group(self):
+        nombre = await self.crear_grupo()
+        nombre = nombre.replace("@", "") + "@conference.alumchat.xyz"
+
+        await self.plugin['xep_0045'].join_muc(nombre, self.boundjid.user, password=None)
+
+        form = await self.plugin['xep_0045'].get_room_config(nombre)
+        form['muc#roomconfig_publicroom'] = True
+        form['muc#roomconfig_persistentroom'] = True
+        await self.plugin['xep_0045'].set_room_config(nombre, form)
+
+        await self.plugin['xep_0045'].join_muc(nombre, self.boundjid.user, password=None)
+
+        print(f"--> Grupo {nombre} creado.")
+        print("----------------------")
+
+    #-------------------------------------------------------------------------------------------------------------------
+    '''
+    send_group_message: Función que envía un mensaje a un grupo.
+    '''
+
+    async def send_group_message(self):
+        response = await self.plugin['xep_0030'].get_items(jid="conference.alumchat.xyz", node="")
+
+        values = response['disco_items']['items']
+        grupos = []
+
+        for value in values:
+            grupos.append((value[0], value[2]))
+
+        opcion = await self.seleccionar_grupo(grupos)
+        JID_grupo = grupos[opcion-1][0]
+
+        await self.plugin['xep_0045'].join_muc(JID_grupo, self.boundjid.user)
+
+        print("\n--> Escriba el mensaje que desea enviar al grupo.")
+        user_input = await aioconsole.ainput("Mensaje: ")
+
+        self.send_message(mto=JID_grupo, mbody=user_input, mtype='groupchat')
+        print(f"--> Mensaje enviado a {grupos[opcion-1][0]}")
+        print("----------------------")
 
 #-------------------------------------------------------------------------------------------------------------------
 # ░██████╗████████╗░█████╗░██████╗░████████╗
@@ -441,6 +490,17 @@ class Server(slixmpp.ClientXMPP):
 
             elif opcion_comunicacion == 5:
                 # Participar en conversaciones grupales
+
+                opcion_grupo = await self.menu_grupos()
+
+                if opcion_grupo == 1:
+                    # Enviar mensaje en grupo
+                    await self.send_group_message()
+                
+                elif opcion_grupo == 2:
+                    # Crear grupo nuevo
+                    await self.create_group()
+
                 await asyncio.sleep(1)
                 
             elif opcion_comunicacion == 6:
@@ -547,4 +607,39 @@ class Server(slixmpp.ClientXMPP):
                 print("\n--> Entrada inválida. Por favor, ingrese un número entero.\n")
 
     async def menu_grupos(self):
-        
+        print("\n----- MENÚ DE GROUP CHATS -----")
+        print("1) Enviar mensaje en grupo")
+        print("2) Crear grupo nuevo")
+
+        while True:
+            try:
+                opcion = int(await aioconsole.ainput("Ingrese el número de la opción deseada: "))
+                if opcion in range(1, 3):
+                    return opcion
+                else:
+                    print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 2.\n")
+            except ValueError:
+                print("\n--> Entrada inválida. Por favor, ingrese un número entero.\n")
+
+    async def seleccionar_grupo(self, grupos):
+        print("\n--> Grupos disponibles:")
+        for i in range(len(grupos)):
+            print(f"{i+1}) {grupos[i][0]}")
+
+        while True:
+            try:
+                opcion = int(await aioconsole.ainput("Ingrese el número de la opción deseada: "))
+                if opcion in range(1, len(grupos)+1):
+                    return opcion
+                else:
+                    print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 2.\n")
+            except ValueError:
+                print("\n--> Entrada inválida. Por favor, ingrese un número entero.\n")
+
+    async def crear_grupo(self):
+        nombre = await aioconsole.ainput("Ingrese el nombre del grupo: ")
+        return nombre
+
+
+
+
