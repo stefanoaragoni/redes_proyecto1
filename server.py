@@ -72,8 +72,6 @@ class Server(slixmpp.ClientXMPP):
         self.add_event_handler("changed_status", self.changed_status)
         self.add_event_handler("presence", self.request_handler)
         self.add_event_handler("muc::message", self.group_message)
-        self.add_event_handler("groupchat_invite", self.handle_group_chat_invite)
-
 
         self.logged_in = False
         
@@ -106,29 +104,6 @@ class Server(slixmpp.ClientXMPP):
             print(f"De: {msg['mucnick']}")
             print(f"Mensaje: {msg['body']}")
             print("--------------------------------")
-
-    #-------------------------------------------------------------------------------------------------------------------
-    '''
-    handle_group_chat_invite: Función que se ejecuta de forma asincrónica al recibir una invitación a un grupo.
-    '''
-
-    async def handle_group_chat_invite(self, invitation):
-        print("\n\n----- INVITACIÓN A GRUPO -----")
-        print(f"--> Has sido invitado al grupo {invitation['from']} por {invitation['from'].bare}.")
-        
-        opcion = await self.mostrar_menu_invitacion()
-
-        if opcion == 1:
-            # Aceptar invitación
-            self.plugin['xep_0045'].joinMUC(invitation['from'], self.boundjid.user, wait=True)
-            print(f"--> Has sido agregado al grupo {invitation['from']}.")
-
-        elif opcion == 2:
-            # Rechazar invitación
-            print(f"--> Has rechazado la invitación al grupo {invitation['from']}.")
-
-        print("--------------------------------")
-
 
     #-------------------------------------------------------------------------------------------------------------------
     '''
@@ -329,6 +304,7 @@ class Server(slixmpp.ClientXMPP):
         print(f"--> Mensaje enviado a {recipient_jid}.")
         print("----------------------")
 
+    #-------------------------------------------------------------------------------------------------------------------
     '''
     set_presence: Función que define el mensaje de presencia del usuario.
     '''
@@ -361,7 +337,7 @@ class Server(slixmpp.ClientXMPP):
         
         # Menu - Definir mensaje o estado
 
-
+    #-------------------------------------------------------------------------------------------------------------------
     '''
     delete_account: Función que elimina la cuenta del servidor.
     '''
@@ -569,3 +545,6 @@ class Server(slixmpp.ClientXMPP):
                     print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 5.\n")
             except ValueError:
                 print("\n--> Entrada inválida. Por favor, ingrese un número entero.\n")
+
+    async def menu_grupos(self):
+        
