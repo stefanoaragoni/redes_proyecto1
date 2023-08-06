@@ -1,3 +1,4 @@
+import base64
 import time
 import slixmpp
 import prettytable
@@ -27,11 +28,13 @@ class ServerUser():
         self.xmpp_client = xmpp.Client(jid.getDomain(), debug=[]) 
 
         if not self.xmpp_client.connect():
-            print("Failed to connect to the XMPP server.")
+            print("--> No se pudo conectar al servidor XMPP.")
             return False
 
+        #-----> Generado por GitHub Copilot
         result = bool(xmpp.features.register(self.xmpp_client, jid.getDomain(), {'username': jid.getNode(), 'password': password}))
-        
+        #-------------------------------
+
         if result:
             return True
         else:
@@ -61,6 +64,7 @@ class Server(slixmpp.ClientXMPP):
         self.register_plugin('xep_0045')                                   # Registrar plugin: Multi-User Chat
         self.register_plugin('xep_0085')                                   # Registrar plugin: Chat State Notifications
         self.register_plugin('xep_0199')                                   # Registrar plugin: XMPP Ping
+        self.register_plugin('xep_0353')                                   # Registrar plugin: Chat Markers
         #-------------------------------
 
         #-----> Stanza
@@ -81,16 +85,37 @@ class Server(slixmpp.ClientXMPP):
     '''
 
     async def message(self, msg):
-        person = msg['from'].bare                                         # Obtener el emisor del mensaje
-            
-        if msg['type'] in ('chat', 'normal'):                               # Si el mensaje es de tipo chat o normal
-            table = prettytable.PrettyTable()                               # Crear una tabla para mostrar el mensaje
-            table.field_names = ["Usuario", "Mensaje"]
-            table.add_row([person, msg['body']])                       # Agregar emisor y mensaje a la tabla
-            
-            print("\n\n----- NUEVO MENSAJE -----")
-            print(table)
+        if msg['type'] == 'headline' and "file_transfer_request" in msg['body']:        # Recibir archivo
+            person = msg['from'].bare                                               # Obtener el emisor del mensaje
+            nombre_archivo = msg['body'].split(" ")[1]                              # Obtener el nombre del archivo
+
+            print("\n\n----- NUEVO ARCHIVO -----")
+            print(f"De: {person}")
+            print(f"Archivo: {nombre_archivo}")
             print("-------------------------")
+
+            chunk_message = await self.wait_until("message")
+            message = chunk_message['body']
+
+            file_data = base64.b64decode(message)
+
+            nombre_archivo = "recibido_" + nombre_archivo
+
+            with open(nombre_archivo, "wb") as file:
+                file.write(file_data)
+
+
+        elif msg['type'] == 'chat':
+            person = msg['from'].bare                                         # Obtener el emisor del mensaje
+                
+            if msg['type'] in ('chat', 'normal'):                               # Si el mensaje es de tipo chat o normal
+                table = prettytable.PrettyTable()                               # Crear una tabla para mostrar el mensaje
+                table.field_names = ["Usuario", "Mensaje"]
+                table.add_row([person, msg['body']])                       # Agregar emisor y mensaje a la tabla
+                
+                print("\n\n----- NUEVO MENSAJE -----")
+                print(table)
+                print("-------------------------")
 
     #-------------------------------------------------------------------------------------------------------------------
     '''
@@ -417,6 +442,35 @@ class Server(slixmpp.ClientXMPP):
         print(f"--> Mensaje enviado a {grupos[opcion-1][0]}")
         print("----------------------")
 
+    #-------------------------------------------------------------------------------------------------------------------
+    '''
+    send_file: Función que envía un archivo a un usuario.
+    '''
+
+    async def send_file_to(self):
+        print("\n----- ENVIAR ARCHIVO A USUARIO -----")
+        recipient_jid = await self.solicitar_usuario()
+        file_path = await aioconsole.ainput("Ingrese la ruta del archivo: ")
+        file_name = file_path.split("/")[-1]
+
+        # Intentar abrir el archivo
+        file_data = None
+        try:
+            with open(file_path, "rb") as file:
+                file_data = file.read()
+        except FileNotFoundError:
+            print("\n--> Archivo no encontrado.")
+            print("----------------------")
+            return
+        
+        file_data_base64 = base64.b64encode(file_data).decode('utf-8')
+        
+        self.send_message(mto=recipient_jid, mbody=f"file_transfer_request {file_name}", mtype="headline")
+        self.send_message(mto=recipient_jid, mbody=file_data_base64, mtype="headline")
+
+        file.close()
+
+
 #-------------------------------------------------------------------------------------------------------------------
 # ░██████╗████████╗░█████╗░██████╗░████████╗
 # ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗╚══██╔══╝
@@ -437,9 +491,7 @@ class Server(slixmpp.ClientXMPP):
 
             # asyncio create thread that concurrently runs the xmpp_menu function
             xmpp_menu_task = asyncio.create_task(self.xmpp_menu())
-            await xmpp_menu_task
-
-            
+            await xmpp_menu_task            
 
         except Exception as e:
             print(f"Error: {e}")
@@ -510,6 +562,7 @@ class Server(slixmpp.ClientXMPP):
 
             elif opcion_comunicacion == 7:
                 # Enviar/recibir archivos
+                await self.send_file_to()
                 await asyncio.sleep(1)
 
             elif opcion_comunicacion == 8:
