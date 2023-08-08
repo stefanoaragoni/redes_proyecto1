@@ -67,7 +67,7 @@ class Server(slixmpp.ClientXMPP):
         self.register_plugin('xep_0353')                                   # Registrar plugin: Chat Markers
         #-------------------------------
 
-        #-----> Stanza
+        #-----> Stanza personalizada
         self.register_stanza(self.delete_account)
 
         #-----> Handlers de eventos
@@ -76,8 +76,6 @@ class Server(slixmpp.ClientXMPP):
         self.add_event_handler("changed_status", self.changed_status)
         self.add_event_handler("presence", self.request_handler)
         self.add_event_handler("groupchat_message", self.group_message)
-
-        self.logged_in = False
         
     #-------------------------------------------------------------------------------------------------------------------
     '''
@@ -406,10 +404,12 @@ class Server(slixmpp.ClientXMPP):
 
         await self.plugin['xep_0045'].join_muc(nombre, self.boundjid.user, password=None)
 
+        #-----> Generado por ChatGPT para poner el grupo como público y persistente
         form = await self.plugin['xep_0045'].get_room_config(nombre)
         form['muc#roomconfig_publicroom'] = True
         form['muc#roomconfig_persistentroom'] = True
         await self.plugin['xep_0045'].set_room_config(nombre, form)
+        #-------------------------------
 
         await self.plugin['xep_0045'].join_muc(nombre, self.boundjid.user, password=None)
 
@@ -433,7 +433,7 @@ class Server(slixmpp.ClientXMPP):
         opcion = await self.seleccionar_grupo(grupos)
         JID_grupo = grupos[opcion-1][0]
 
-        await self.plugin['xep_0045'].join_muc(JID_grupo, self.boundjid.user)
+        await self.plugin['xep_0045'].join_muc(JID_grupo, self.boundjid.user)       # Se une al grupo, en caso de que no esté unido
 
         print("\n--> Escriba el mensaje que desea enviar al grupo.")
         user_input = await aioconsole.ainput("Mensaje: ")
@@ -487,9 +487,8 @@ class Server(slixmpp.ClientXMPP):
         try:
             self.send_presence()                                            # Enviar presencia  
             self.get_roster()                                               # Obtener roster           
-            self.logged_in = True                                           # Cambiar el estado de logged_in a True
 
-            # asyncio create thread that concurrently runs the xmpp_menu function
+            # asyncio - concurrencia
             xmpp_menu_task = asyncio.create_task(self.xmpp_menu())
             await xmpp_menu_task            
 
@@ -579,7 +578,6 @@ class Server(slixmpp.ClientXMPP):
             else:
                 print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 11.\n")
                 await asyncio.sleep(1)
-
 
     async def mostrar_menu_comunicacion(self):
             print("\n----- MENÚ DE COMUNICACIÓN -----")
