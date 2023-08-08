@@ -1,8 +1,4 @@
-
-import time
 from server import Server, ServerUser
-import prettytable
-import threading
 
 class Client():
 

@@ -1,13 +1,3 @@
-import base64
-import time
-import slixmpp
-import prettytable
-import xmpp
-import asyncio
-import aioconsole 
-from slixmpp.exceptions import IqError, IqTimeout
-from slixmpp.xmlstream import ElementBase, ET, register_stanza_plugin
-
 # *********************************************************************************************************************
 # ░██████╗██╗░██████╗░███╗░░██╗  ██╗░░░██╗██████╗░
 # ██╔════╝██║██╔════╝░████╗░██║  ██║░░░██║██╔══██╗
@@ -16,6 +6,8 @@ from slixmpp.xmlstream import ElementBase, ET, register_stanza_plugin
 # ██████╔╝██║╚██████╔╝██║░╚███║  ╚██████╔╝██║░░░░░
 # ╚═════╝░╚═╝░╚═════╝░╚═╝░░╚══╝  ░╚═════╝░╚═╝░░░░░
 # *********************************************************************************************************************
+
+import xmpp
 
 class ServerUser():
 
@@ -40,7 +32,6 @@ class ServerUser():
         else:
             return False
         
-
 # *********************************************************************************************************************
 # ██╗░░░░░░█████╗░░██████╗░  ██╗███╗░░██╗
 # ██║░░░░░██╔══██╗██╔════╝░  ██║████╗░██║
@@ -49,7 +40,16 @@ class ServerUser():
 # ███████╗╚█████╔╝╚██████╔╝  ██║██║░╚███║
 # ╚══════╝░╚════╝░░╚═════╝░  ╚═╝╚═╝░░╚══╝
 # *********************************************************************************************************************
-        
+
+from slixmpp.exceptions import IqError, IqTimeout
+from slixmpp.xmlstream import ElementBase, ET, register_stanza_plugin
+import slixmpp
+import prettytable
+import threading
+import asyncio
+import aioconsole 
+import base64
+import time 
 
 class Server(slixmpp.ClientXMPP):
 
