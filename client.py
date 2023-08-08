@@ -65,27 +65,31 @@ class Client():
                     usuario, contrasena = self.solicitar_usuario_contrasena()
                     serverUser = ServerUser()
 
-                    if serverUser.register(usuario, contrasena):
-                        print("\n--> ¡Registro exitoso!")
-                    else:
-                        print("\n--> ¡Registro fallido!")
-                        opcion_principal = 0
+                    result_register = serverUser.register(usuario, contrasena)
+                    mensaje = "fallido! Por favor, intente de nuevo." if result_register == 0 else "exitoso! Ya puede iniciar sesión."
+                    opcion_principal = 0
+
+                    print(f"\n--> {usuario}: ¡Registro {mensaje}")
 
                 elif opcion_principal == 2:
                     # Iniciar sesión con una cuenta
                     usuario, contrasena = self.solicitar_usuario_contrasena()
                     self.server = Server(usuario, contrasena)
 
-                    self.server.connect(disable_starttls=True)
-                    self.server.process(forever=False)
+                    # xmpp_thread = threading.Thread(target=self.server.process_init)
+                    # xmpp_thread.start()
+
+                    self.server.connect(disable_starttls=True)      # Conexión al servidor
+                    self.server.process(forever=False)              # Programa corre hasta que se cierra la conexión
 
                     if not self.server.logged_in:
-                        print("\n--> ¡Inicio de sesión fallido!")
+                        print("\n--> ¡Inicio de sesión fallido! Por favor, intente de nuevo.")
                         opcion_principal = 0
                         
                 elif opcion_principal == 3:
                     print("\n--> ¡Hasta luego!")
-                    exit()
+                    success = True
+
                 else:
                     print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 3.")
                     opcion_principal = 0

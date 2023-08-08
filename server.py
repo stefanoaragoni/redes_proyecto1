@@ -81,6 +81,100 @@ class Server(slixmpp.ClientXMPP):
         
     #-------------------------------------------------------------------------------------------------------------------
     '''
+    start: Función que se ejecuta al iniciar sesión en el servidor de forma asincrónica.
+    '''
+
+    async def start(self, event):
+        try:
+            self.send_presence()                                            # Enviar presencia  
+            self.get_roster()                                               # Obtener roster           
+
+            # asyncio - concurrencia
+            xmpp_menu_task = asyncio.create_task(self.xmpp_menu())
+            await xmpp_menu_task            
+
+        except Exception as e:
+            print(f"Error: {e}")
+
+    #-------------------------------------------------------------------------------------------------------------------
+    '''
+    xmpp_menu: Función que muestra el menú de comunicación y ejecuta las funciones correspondientes a cada opción.
+    '''
+
+    async def xmpp_menu(self):
+
+        print("\n--> Sesión iniciada. Bienvenidx.\n\n")
+        self.logged_in = True
+
+        print("---------- MENSAJES / NOTIFICACIONES ----------")
+        await asyncio.sleep(3)
+        print("\n\n-----------------------------------------------\n")
+
+        opcion_comunicacion = 0
+        while opcion_comunicacion != 9:
+            opcion_comunicacion = await self.mostrar_menu_comunicacion()
+
+            if opcion_comunicacion == 1:
+                # Mostrar todos los contactos y su estado
+                await self.get_connections()
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 2:
+                # Agregar un usuario a tus contactos
+                await self.send_friend_request()
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 3:
+                # Mostrar detalles de contacto de un usuario
+                await self.user_contact_details()
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 4:
+                # Escribirle a usuario/contacto
+                await self.send_msg_to_user()
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 5:
+                # Participar en conversaciones grupales
+                opcion_grupo = await self.menu_grupos()
+
+                if opcion_grupo == 1:
+                    # Enviar mensaje en grupo
+                    await self.send_group_message()
+                
+                elif opcion_grupo == 2:
+                    # Crear grupo nuevo
+                    await self.create_group()
+
+                await asyncio.sleep(1)
+                
+            elif opcion_comunicacion == 6:
+                # Definir mensaje de presencia
+                await self.set_presence()
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 7:
+                # Enviar/recibir archivos
+                await self.send_file_to()
+                await asyncio.sleep(1)
+
+            elif opcion_comunicacion == 8:
+                # Cerrar sesión con una cuenta
+                print("\n--> Sesión cerrada. Hasta luego.")
+                self.disconnect()
+                exit()
+
+            elif opcion_comunicacion == 9:
+                # Eliminar la cuenta del servidor
+                await self.delete_account()
+                await asyncio.sleep(1)
+
+            else:
+                print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 11.\n")
+                await asyncio.sleep(1)
+    
+    #-------------------------------------------------------------------------------------------------------------------
+    '''
     message: Función que se ejecuta de forma asincrónica al recibir un mensaje.
     '''
 
@@ -132,22 +226,95 @@ class Server(slixmpp.ClientXMPP):
 
     #-------------------------------------------------------------------------------------------------------------------
     '''
-    send_friend_request: Función que envía una solicitud de amistad a un usuario.
+    send_msg_to_user: Función que envía un mensaje a un usuario.
     '''
 
-    async def send_friend_request(self):
-        print("\n\n----- AGREGAR CONTACTO -----")
+    async def send_msg_to_user(self):
+        print("\n----- ENVIAR MENSAJE A USUARIO -----")
         recipient_jid = await self.solicitar_usuario()
+        user_input = await aioconsole.ainput("Mensaje: ")
 
-        if recipient_jid == self.boundjid.bare:
-            print("\n--> No puedes agregarte a ti mismo como contacto.")
+        self.send_message(mto=recipient_jid, mbody=user_input, mtype='chat')
+        print(f"--> Mensaje enviado a {recipient_jid}.")
+        print("----------------------")
+ 
+    #-------------------------------------------------------------------------------------------------------------------
+    '''
+    send_group_message: Función que envía un mensaje a un grupo.
+    '''
 
-        else:
-            self.send_presence(pto=recipient_jid, ptype='subscribe')
-            print(f"--> Se ha enviado una solicitud de contacto a {recipient_jid}.")
+    async def send_group_message(self):
+        response = await self.plugin['xep_0030'].get_items(jid="conference.alumchat.xyz", node="")
 
-        print("----------------------------") 
+        values = response['disco_items']['items']
+        grupos = []
+
+        for value in values:
+            grupos.append((value[0], value[2]))
+
+        opcion = await self.seleccionar_grupo(grupos)
+        JID_grupo = grupos[opcion-1][0]
+
+        await self.plugin['xep_0045'].join_muc(JID_grupo, self.boundjid.user)       # Se une al grupo, en caso de que no esté unido
+
+        print("\n--> Escriba el mensaje que desea enviar al grupo.")
+        user_input = await aioconsole.ainput("Mensaje: ")
+
+        self.send_message(mto=JID_grupo, mbody=user_input, mtype='groupchat')
+        print(f"--> Mensaje enviado a {grupos[opcion-1][0]}")
+        print("----------------------")
+
+    #-------------------------------------------------------------------------------------------------------------------
+    '''
+    send_file: Función que envía un archivo a un usuario.
+    '''
+
+    async def send_file_to(self):
+        print("\n----- ENVIAR ARCHIVO A USUARIO -----")
+        recipient_jid = await self.solicitar_usuario()
+        file_path = await aioconsole.ainput("Ingrese la ruta del archivo: ")
+        file_name = file_path.split("/")[-1]
+
+        # Intentar abrir el archivo
+        file_data = None
+        try:
+            with open(file_path, "rb") as file:
+                file_data = file.read()
+        except FileNotFoundError:
+            print("\n--> Archivo no encontrado.")
+            print("----------------------")
+            return
         
+        file_data_base64 = base64.b64encode(file_data).decode('utf-8')
+        
+        self.send_message(mto=recipient_jid, mbody=f"file_transfer_request {file_name}", mtype="headline")
+        self.send_message(mto=recipient_jid, mbody=file_data_base64, mtype="headline")
+
+        file.close()
+
+    #-------------------------------------------------------------------------------------------------------------------
+    '''
+    create_group: Función que crea un grupo.
+    '''
+
+    async def create_group(self):
+        nombre = await self.crear_grupo()
+        nombre = nombre.replace("@", "") + "@conference.alumchat.xyz"
+
+        await self.plugin['xep_0045'].join_muc(nombre, self.boundjid.user, password=None)
+
+        #-----> Generado por ChatGPT para poner el grupo como público y persistente
+        form = await self.plugin['xep_0045'].get_room_config(nombre)
+        form['muc#roomconfig_publicroom'] = True
+        form['muc#roomconfig_persistentroom'] = True
+        await self.plugin['xep_0045'].set_room_config(nombre, form)
+        #-------------------------------
+
+        await self.plugin['xep_0045'].join_muc(nombre, self.boundjid.user, password=None)
+
+        print(f"--> Grupo {nombre} creado.")
+        print("----------------------")
+
     #-------------------------------------------------------------------------------------------------------------------
     '''
     request_handler: Revisa si la presence subscription fue aceptada o rechazada.
@@ -170,41 +337,24 @@ class Server(slixmpp.ClientXMPP):
             print("--------------------------------") 
             self.send_presence(pto=presence['from'], ptype='unsubscribe')
 
-    #--------------------------------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------------------------------------------------
     '''
-    changed_status: Función que se ejecuta de forma asincrónica al cambiar el estado de un contacto.
+    send_friend_request: Función que envía una solicitud de amistad a un usuario.
     '''
 
-    async def changed_status(self, presence):
-        jid = presence['from'].bare
-        show = presence['type']
-        status = presence['status']
+    async def send_friend_request(self):
+        print("\n\n----- AGREGAR CONTACTO -----")
+        recipient_jid = await self.solicitar_usuario()
 
-        if "@conference.alumchat.xyz" in jid:
-            return
+        if recipient_jid == self.boundjid.bare:
+            print("\n--> No puedes agregarte a ti mismo como contacto.")
 
-        if jid != self.boundjid.bare:                             # Si el contacto no el usuario actual
+        else:
+            self.send_presence(pto=recipient_jid, ptype='subscribe')
+            print(f"--> Se ha enviado una solicitud de contacto a {recipient_jid}.")
 
-            if show == 'available':                                 # Si el contacto está chateando
-                show = "Conectado"
-            elif show == "away":                                    # Si el contacto está ausente
-                show = "Ausente"
-            elif show == "xa":                                      # Si el contacto está ausente por un tiempo largo
-                show = "Ausente por un tiempo largo"
-            elif show == "dnd":                                     # Si el contacto no quiere ser molestado
-                show = "No molestar"
-            elif show == "unavailable":                             # Si el contacto no está disponible
-                show = "Desconectado"
-
-            print("\n\n----- NOTIFICACION: ESTADO / MENSAJE -----")
-
-            if status == "":
-                print(f"-Usuario: {jid}\n-Estado: {show}")
-            else:
-                print(f"-Usuario: {jid}\n-Estado: {show}\n-Mensaje: {status}")
-
-            print("------------------------------------------")       
-        
+        print("----------------------------") 
+       
     #-------------------------------------------------------------------------------------------------------------------
     '''
     get_connections: Función que obtiene los contactos del usuario actual y su estado.
@@ -318,19 +468,40 @@ class Server(slixmpp.ClientXMPP):
 
         print("------------------------------")
 
-    #-------------------------------------------------------------------------------------------------------------------
+    #--------------------------------------------------------------------------------------------------------------------
     '''
-    send_msg_to_user: Función que envía un mensaje a un usuario.
+    changed_status: Función que se ejecuta de forma asincrónica al cambiar el estado de un contacto.
     '''
 
-    async def send_msg_to_user(self):
-        print("\n----- ENVIAR MENSAJE A USUARIO -----")
-        recipient_jid = await self.solicitar_usuario()
-        user_input = await aioconsole.ainput("Mensaje: ")
+    async def changed_status(self, presence):
+        jid = presence['from'].bare
+        show = presence['type']
+        status = presence['status']
 
-        self.send_message(mto=recipient_jid, mbody=user_input, mtype='chat')
-        print(f"--> Mensaje enviado a {recipient_jid}.")
-        print("----------------------")
+        if "@conference.alumchat.xyz" in jid:
+            return
+
+        if jid != self.boundjid.bare:                             # Si el contacto no el usuario actual
+
+            if show == 'available':                                 # Si el contacto está chateando
+                show = "Conectado"
+            elif show == "away":                                    # Si el contacto está ausente
+                show = "Ausente"
+            elif show == "xa":                                      # Si el contacto está ausente por un tiempo largo
+                show = "Ausente por un tiempo largo"
+            elif show == "dnd":                                     # Si el contacto no quiere ser molestado
+                show = "No molestar"
+            elif show == "unavailable":                             # Si el contacto no está disponible
+                show = "Desconectado"
+
+            print("\n\n----- NOTIFICACION: ESTADO / MENSAJE -----")
+
+            if status == "":
+                print(f"-Usuario: {jid}\n-Estado: {show}")
+            else:
+                print(f"-Usuario: {jid}\n-Estado: {show}\n-Mensaje: {status}")
+
+            print("------------------------------------------")       
 
     #-------------------------------------------------------------------------------------------------------------------
     '''
@@ -394,110 +565,6 @@ class Server(slixmpp.ClientXMPP):
                 print("\n--> No se pudo eliminar la cuenta.")
         except (IqError, IqTimeout) as e:
             print("\n--> No se pudo eliminar la cuenta.")
-        
-    #-------------------------------------------------------------------------------------------------------------------
-    '''
-    create_group: Función que crea un grupo.
-    '''
-
-    async def create_group(self):
-        nombre = await self.crear_grupo()
-        nombre = nombre.replace("@", "") + "@conference.alumchat.xyz"
-
-        await self.plugin['xep_0045'].join_muc(nombre, self.boundjid.user, password=None)
-
-        #-----> Generado por ChatGPT para poner el grupo como público y persistente
-        form = await self.plugin['xep_0045'].get_room_config(nombre)
-        form['muc#roomconfig_publicroom'] = True
-        form['muc#roomconfig_persistentroom'] = True
-        await self.plugin['xep_0045'].set_room_config(nombre, form)
-        #-------------------------------
-
-        await self.plugin['xep_0045'].join_muc(nombre, self.boundjid.user, password=None)
-
-        print(f"--> Grupo {nombre} creado.")
-        print("----------------------")
-
-    #-------------------------------------------------------------------------------------------------------------------
-    '''
-    send_group_message: Función que envía un mensaje a un grupo.
-    '''
-
-    async def send_group_message(self):
-        response = await self.plugin['xep_0030'].get_items(jid="conference.alumchat.xyz", node="")
-
-        values = response['disco_items']['items']
-        grupos = []
-
-        for value in values:
-            grupos.append((value[0], value[2]))
-
-        opcion = await self.seleccionar_grupo(grupos)
-        JID_grupo = grupos[opcion-1][0]
-
-        await self.plugin['xep_0045'].join_muc(JID_grupo, self.boundjid.user)       # Se une al grupo, en caso de que no esté unido
-
-        print("\n--> Escriba el mensaje que desea enviar al grupo.")
-        user_input = await aioconsole.ainput("Mensaje: ")
-
-        self.send_message(mto=JID_grupo, mbody=user_input, mtype='groupchat')
-        print(f"--> Mensaje enviado a {grupos[opcion-1][0]}")
-        print("----------------------")
-
-    #-------------------------------------------------------------------------------------------------------------------
-    '''
-    send_file: Función que envía un archivo a un usuario.
-    '''
-
-    async def send_file_to(self):
-        print("\n----- ENVIAR ARCHIVO A USUARIO -----")
-        recipient_jid = await self.solicitar_usuario()
-        file_path = await aioconsole.ainput("Ingrese la ruta del archivo: ")
-        file_name = file_path.split("/")[-1]
-
-        # Intentar abrir el archivo
-        file_data = None
-        try:
-            with open(file_path, "rb") as file:
-                file_data = file.read()
-        except FileNotFoundError:
-            print("\n--> Archivo no encontrado.")
-            print("----------------------")
-            return
-        
-        file_data_base64 = base64.b64encode(file_data).decode('utf-8')
-        
-        self.send_message(mto=recipient_jid, mbody=f"file_transfer_request {file_name}", mtype="headline")
-        self.send_message(mto=recipient_jid, mbody=file_data_base64, mtype="headline")
-
-        file.close()
-
-
-#-------------------------------------------------------------------------------------------------------------------
-# ░██████╗████████╗░█████╗░██████╗░████████╗
-# ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗╚══██╔══╝
-# ╚█████╗░░░░██║░░░███████║██████╔╝░░░██║░░░
-# ░╚═══██╗░░░██║░░░██╔══██║██╔══██╗░░░██║░░░
-# ██████╔╝░░░██║░░░██║░░██║██║░░██║░░░██║░░░
-# ╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝░░░╚═╝░░░
-#-------------------------------------------------------------------------------------------------------------------
-    '''
-    start: Función que se ejecuta al iniciar sesión en el servidor de forma asincrónica.
-    '''
-
-    async def start(self, event):
-        try:
-            self.send_presence()                                            # Enviar presencia  
-            self.get_roster()                                               # Obtener roster    
-
-            self.logged_in = True       
-
-            # asyncio - concurrencia
-            xmpp_menu_task = asyncio.create_task(self.xmpp_menu())
-            await xmpp_menu_task            
-
-        except Exception as e:
-            print(f"Error: {e}")
 
 #-------------------------------------------------------------------------------------------------------------------
 # ███╗░░░███╗███████╗███╗░░██╗██╗░░░██╗
@@ -507,81 +574,6 @@ class Server(slixmpp.ClientXMPP):
 # ██║░╚═╝░██║███████╗██║░╚███║╚██████╔╝
 # ╚═╝░░░░░╚═╝╚══════╝╚═╝░░╚══╝░╚═════╝░
 #-------------------------------------------------------------------------------------------------------------------
-    '''
-    xmpp_menu: Función que muestra el menú de comunicación y ejecuta las funciones correspondientes a cada opción.
-    '''
-
-    async def xmpp_menu(self):
-
-        print("\n--> Sesión iniciada. Bienvenidx.\n\n")
-
-        print("---------- MENSAJES / NOTIFICACIONES ----------")
-        await asyncio.sleep(3)
-        print("\n\n-----------------------------------------------\n")
-
-        opcion_comunicacion = 0
-        while opcion_comunicacion != 9:
-            opcion_comunicacion = await self.mostrar_menu_comunicacion()
-
-            if opcion_comunicacion == 1:
-                # Mostrar todos los contactos y su estado
-                await self.get_connections()
-                await asyncio.sleep(1)
-
-            elif opcion_comunicacion == 2:
-                # Agregar un usuario a tus contactos
-                await self.send_friend_request()
-                await asyncio.sleep(1)
-
-            elif opcion_comunicacion == 3:
-                # Mostrar detalles de contacto de un usuario
-                await self.user_contact_details()
-                await asyncio.sleep(1)
-
-            elif opcion_comunicacion == 4:
-                # Escribirle a usuario/contacto
-                await self.send_msg_to_user()
-                await asyncio.sleep(1)
-
-            elif opcion_comunicacion == 5:
-                # Participar en conversaciones grupales
-
-                opcion_grupo = await self.menu_grupos()
-
-                if opcion_grupo == 1:
-                    # Enviar mensaje en grupo
-                    await self.send_group_message()
-                
-                elif opcion_grupo == 2:
-                    # Crear grupo nuevo
-                    await self.create_group()
-
-                await asyncio.sleep(1)
-                
-            elif opcion_comunicacion == 6:
-                # Definir mensaje de presencia
-                await self.set_presence()
-                await asyncio.sleep(1)
-
-            elif opcion_comunicacion == 7:
-                # Enviar/recibir archivos
-                await self.send_file_to()
-                await asyncio.sleep(1)
-
-            elif opcion_comunicacion == 8:
-                # Cerrar sesión con una cuenta
-                print("\n--> Sesión cerrada. Hasta luego.")
-                self.disconnect()
-                exit()
-
-            elif opcion_comunicacion == 9:
-                # Eliminar la cuenta del servidor
-                await self.delete_account()
-                await asyncio.sleep(1)
-
-            else:
-                print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 11.\n")
-                await asyncio.sleep(1)
 
     async def mostrar_menu_comunicacion(self):
             print("\n----- MENÚ DE COMUNICACIÓN -----")
