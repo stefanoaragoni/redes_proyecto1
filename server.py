@@ -89,7 +89,7 @@ class Server(slixmpp.ClientXMPP):
             self.send_presence()                                            # Enviar presencia  
             self.get_roster()                                               # Obtener roster           
 
-            # asyncio - concurrencia
+            # Creación de hilo para manejar el menú de comunicación
             xmpp_menu_task = asyncio.create_task(self.xmpp_menu())
             await xmpp_menu_task            
 
