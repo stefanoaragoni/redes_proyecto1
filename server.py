@@ -76,6 +76,8 @@ class Server(slixmpp.ClientXMPP):
         self.add_event_handler("changed_status", self.changed_status)
         self.add_event_handler("presence", self.request_handler)
         self.add_event_handler("groupchat_message", self.group_message)
+
+        self.logged_in = False
         
     #-------------------------------------------------------------------------------------------------------------------
     '''
@@ -486,7 +488,9 @@ class Server(slixmpp.ClientXMPP):
     async def start(self, event):
         try:
             self.send_presence()                                            # Enviar presencia  
-            self.get_roster()                                               # Obtener roster           
+            self.get_roster()                                               # Obtener roster    
+
+            self.logged_in = True       
 
             # asyncio - concurrencia
             xmpp_menu_task = asyncio.create_task(self.xmpp_menu())
