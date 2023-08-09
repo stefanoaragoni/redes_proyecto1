@@ -186,20 +186,17 @@ class Server(slixmpp.ClientXMPP):
     '''
 
     async def message(self, msg):
-        if msg['type'] == 'headline' and "file_transfer_request" in msg['body']:        # Recibir archivo
+        if msg['type'] == 'chat' and "file_transfer_request" in msg['body']:        # Recibir archivo
             person = msg['from'].bare                                               # Obtener el emisor del mensaje
-            nombre_archivo = msg['body'].split(" ")[1]                              # Obtener el nombre del archivo
+            nombre_archivo = msg['body'].split(":")[1]                              # Obtener el nombre del archivo
+            contenido_archivo = msg['body'].split(":")[2]                           # Obtener el contenido del archivo
 
             print("\n\n----- NUEVO ARCHIVO -----")
             print(f"De: {person}")
             print(f"Archivo: {nombre_archivo}")
             print("-------------------------")
 
-            chunk_message = await self.wait_until("message")
-            message = chunk_message['body']
-
-            file_data = base64.b64decode(message)
-
+            file_data = base64.b64decode(contenido_archivo)
             nombre_archivo = "recibido_" + nombre_archivo
 
             with open(nombre_archivo, "wb") as file:
@@ -294,9 +291,7 @@ class Server(slixmpp.ClientXMPP):
         
         file_data_base64 = base64.b64encode(file_data).decode('utf-8')
         
-        self.send_message(mto=recipient_jid, mbody=f"file_transfer_request {file_name}", mtype="headline")
-        self.send_message(mto=recipient_jid, mbody=file_data_base64, mtype="headline")
-
+        self.send_message(mto=recipient_jid, mbody=f"file_transfer_request:{file_name}:{file_data_base64}", mtype="chat")
         file.close()
 
     #-------------------------------------------------------------------------------------------------------------------
