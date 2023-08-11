@@ -24,13 +24,10 @@ class ServerUser():
             return False
 
         #-----> Generado por GitHub Copilot
-        result = bool(xmpp.features.register(self.xmpp_client, jid.getDomain(), {'username': jid.getNode(), 'password': password}))
+        result = xmpp.features.register(self.xmpp_client, jid.getDomain(), {'username': jid.getNode(), 'password': password})
         #-------------------------------
 
-        if result:
-            return True
-        else:
-            return False
+        return result
         
 # *********************************************************************************************************************
 # ██╗      ██████╗  ██████╗     ██╗███╗   ██╗
@@ -89,8 +86,10 @@ class Server(slixmpp.ClientXMPP):
             self.send_presence()                                            # Enviar presencia  
             self.get_roster()                                               # Obtener roster           
 
-            # Creación de hilo para manejar el menú de comunicación
-            xmpp_menu_task = asyncio.create_task(self.xmpp_menu())
+            #-----> Generado por ChatGPT
+            xmpp_menu_task = asyncio.create_task(self.xmpp_menu())          # Creación de hilo para manejar el menú de comunicación
+            #---------------------------
+            
             await xmpp_menu_task            
 
         except Exception as e:

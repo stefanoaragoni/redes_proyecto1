@@ -91,6 +91,8 @@ class Client():
                     serverUser = ServerUser()
 
                     result_register = serverUser.register(usuario, contrasena)
+                    result_register = 1 if result_register else 0
+
                     mensaje = "fallido! Por favor, intente de nuevo." if result_register == 0 else "exitoso! Ya puede iniciar sesión."
                     opcion_principal = 0
 
@@ -114,6 +116,7 @@ class Client():
                 elif opcion_principal == 3:
                     print("\n--> ¡Hasta luego!")
                     success = True
+                    exit()
 
                 else:
                     print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 3.")
