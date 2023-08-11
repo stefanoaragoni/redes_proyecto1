@@ -24,9 +24,20 @@ This project implements an instant messaging Python client that supports the XMP
 
 ------
 
-### Interface
+### Downloading the Code
 
-The project is implemented with a console-based interface (CLI). The client is written in Python and is compatible with different operating systems. However, I recommend using Python 3.9.2 (64-bit) since that was the version I used while developing this client. 
+Before you begin, ensure you have the following installed:
+
+    > Python 3.9.2 (64-bit)
+    > pip3
+    > git
+
+To download the code, open a terminal and run the following commands:
+
+    > cd path/to/your/desired/directory
+    > git clone https://github.com/stefanoaragoni/redes_proyecto1.git
+
+Or if you prefer, you can download the code as a ZIP file and extract it to your desired directory.
 
 ### Dependencies
 
@@ -37,6 +48,22 @@ To successfully run the XMPP Client, you will need to install several Python lib
     > pip3 install asyncio
     > pip3 install aioconsole
     > pip3 install prettytable
+
+### Running the Code
+
+In order to run the XMPP Client, you must first run the following command in the terminal:
+
+    > cd path/to/your/desired/directory/redes_proyecto1
+
+Then, run the following command:
+
+    > python3 main.py
+
+------
+
+### Interface
+
+The project is implemented with a console-based interface (CLI). The client is written in Python and is compatible with different operating systems. However, I recommend using Python 3.9.2 (64-bit) since that was the version I used while developing this client. 
 
 ### XMPP Server
 
