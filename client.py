@@ -1,3 +1,9 @@
+# # .-------------------------------------------------------------------------------.
+# Universidad del Valle de Guatemala
+# Proyecto 1 - Redes
+# Stefano Aragoni (20261)
+# '-------------------------------------------------------------------------------'
+
 # *********************************************************************************************************************
 #  ██████╗██╗     ██╗███████╗███╗   ██╗████████╗
 # ██╔════╝██║     ██║██╔════╝████╗  ██║╚══██╔══╝
@@ -87,11 +93,11 @@ class Client():
 
                 if opcion_principal == 1:
                     # Registrar una nueva cuenta en el servidor
-                    usuario, contrasena = self.solicitar_usuario_contrasena()
+                    usuario, contrasena = self.solicitar_usuario_contrasena()           # Solicitar usuario y contraseña
                     serverUser = ServerUser()
 
-                    result_register = serverUser.register(usuario, contrasena)
-                    result_register = 1 if result_register else 0
+                    result_register = serverUser.register(usuario, contrasena)          # Registrar usuario en el servidor
+                    result_register = 1 if result_register else 0                       # 1 = exitoso, 0 = fallido
 
                     mensaje = "fallido! Por favor, intente de nuevo." if result_register == 0 else "exitoso! Ya puede iniciar sesión."
                     opcion_principal = 0
@@ -100,8 +106,8 @@ class Client():
 
                 elif opcion_principal == 2:
                     # Iniciar sesión con una cuenta
-                    usuario, contrasena = self.solicitar_usuario_contrasena()
-                    self.server = Server(usuario, contrasena)
+                    usuario, contrasena = self.solicitar_usuario_contrasena()           # Solicitar usuario y contraseña
+                    self.server = Server(usuario, contrasena)                           # Crear instancia del servidor con usuario y contraseña
 
                     # xmpp_thread = threading.Thread(target=self.server.process_init)
                     # xmpp_thread.start()
@@ -116,7 +122,7 @@ class Client():
                 elif opcion_principal == 3:
                     print("\n--> ¡Hasta luego!")
                     success = True
-                    exit()
+                    exit(0)
 
                 else:
                     print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 3.")

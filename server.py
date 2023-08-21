@@ -1,3 +1,9 @@
+# .-------------------------------------------------------------------------------.
+# Universidad del Valle de Guatemala
+# Proyecto 1 - Redes
+# Stefano Aragoni (20261)
+# '-------------------------------------------------------------------------------'
+
 # *********************************************************************************************************************
 # ███████╗██╗ ██████╗ ███╗   ██╗    ██╗   ██╗██████╗ 
 # ██╔════╝██║██╔════╝ ████╗  ██║    ██║   ██║██╔══██╗
@@ -510,28 +516,27 @@ class Server(slixmpp.ClientXMPP):
     '''
 
     async def set_presence(self):
-        opcion = await self.mostrar_menu_estado()                       # Mostrar el menú de mensaje de presencia
+        print("\n\n----- MENSAJE PRESENCIA | ESTADO -----")
 
-        if opcion == 1:                                                 # Si desea modificar el mensaje de presencia
-            mensaje = await aioconsole.ainput("Ingrese el mensaje de presencia: ")
-            self.send_presence(pstatus=mensaje)                         # Enviar mensaje de presencia con librería slixmpp
+        # Para modificar el mensaje de presencia
+        mensaje = await aioconsole.ainput("Ingrese un mensaje de presencia: ")  # Obtener el mensaje de presencia
 
-            print("\n--> Mensaje de presencia modificado.")
+        # Para modificar el estado del usuario
+        estado = await self.solicitar_estado()                                  # Obtener el estado
 
-        elif opcion == 2:                                               # Si desea modificar el estado
-            estado = await self.solicitar_estado()                      # Obtener el estado
-            if estado == 1:
-                self.send_presence(pshow="chat")                        # Enviar estado con librería slixmpp
-            elif estado == 2:
-                self.send_presence(pshow="away")
-            elif estado == 3:
-                self.send_presence(pshow="xa")
-            elif estado == 4:
-                self.send_presence(pshow="dnd")
-            elif estado == 5:
-                self.send_presence(pshow="unavailable")
+        # Enviar mensaje de presencia y estado al servidor
+        if estado == 1:
+            self.send_presence(pshow="chat", pstatus=mensaje)                   # Enviar estado con librería slixmpp
+        elif estado == 2:
+            self.send_presence(pshow="away", pstatus=mensaje)
+        elif estado == 3:
+            self.send_presence(pshow="xa", pstatus=mensaje)
+        elif estado == 4:
+            self.send_presence(pshow="dnd", pstatus=mensaje)
+        elif estado == 5:
+            self.send_presence(pshow="unavailable", pstatus=mensaje)
 
-            print("\n--> Estado modificado.")
+        print("\n--> Estado y mensaje modificados.")
 
         print("----------------------")
         
@@ -561,7 +566,7 @@ class Server(slixmpp.ClientXMPP):
             if response['type'] == 'result':                                # Si se pudo eliminar la cuenta
                 self.disconnect()                                           # Desconectar del servidor
                 print("\n--> Cuenta eliminada. Hasta luego.")
-                exit()
+                exit(0)
             else:
                 print("\n--> No se pudo eliminar la cuenta.")
         except (IqError, IqTimeout) as e:
@@ -618,21 +623,6 @@ class Server(slixmpp.ClientXMPP):
                     return opcion
                 else:
                     print("\n--> Opción no válida. Por favor, ingrese 1 o 2.\n")
-            except ValueError:
-                print("\n--> Entrada inválida. Por favor, ingrese un número entero.\n")
-
-    async def mostrar_menu_estado(self):
-        print("\n----- MENÚ DE MENSAJE DE PRESENCIA -----")
-        print("1) Modificar mensaje")
-        print("2) Modificar estado")
-
-        while True:
-            try:
-                opcion = int(await aioconsole.ainput("Ingrese el número de la opción deseada: "))
-                if opcion in range(1, 3):
-                    return opcion
-                else:
-                    print("\n--> Opción no válida. Por favor, ingrese un número del 1 al 2.\n")
             except ValueError:
                 print("\n--> Entrada inválida. Por favor, ingrese un número entero.\n")
 
