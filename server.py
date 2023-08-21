@@ -16,18 +16,18 @@ class ServerUser():
     '''
 
     def register(self, username, password):
-        jid = xmpp.protocol.JID(username)
-        self.xmpp_client = xmpp.Client(jid.getDomain(), debug=[]) 
+        jid = xmpp.protocol.JID(username)                           # Crear objeto JID
+        self.xmpp_client = xmpp.Client(jid.getDomain(), debug=[])   # Crear cliente XMPP
 
-        if not self.xmpp_client.connect():
+        if not self.xmpp_client.connect():                          # Intentar conectar al servidor XMPP
             print("--> No se pudo conectar al servidor XMPP.")
             return False
 
-        #-----> Generado por GitHub Copilot
+        #-----> Generado por GitHub Copilot |                         Registra al usuario en el servidor XMPP
         result = xmpp.features.register(self.xmpp_client, jid.getDomain(), {'username': jid.getNode(), 'password': password})
         #-------------------------------
 
-        return result
+        return result                                               # Retorna el resultado del registro
         
 # *********************************************************************************************************************
 # ██╗      ██████╗  ██████╗     ██╗███╗   ██╗
@@ -68,11 +68,11 @@ class Server(slixmpp.ClientXMPP):
         self.register_stanza(self.delete_account)
 
         #-----> Handlers de eventos
-        self.add_event_handler("session_start", self.start)
-        self.add_event_handler("message", self.message)
-        self.add_event_handler("changed_status", self.changed_status)
-        self.add_event_handler("presence", self.request_handler)
-        self.add_event_handler("groupchat_message", self.group_message)
+        self.add_event_handler("session_start", self.start)                 # Handler para cuando se inicia sesión
+        self.add_event_handler("message", self.message)                     # Handler para cuando se recibe un mensaje
+        self.add_event_handler("changed_status", self.changed_status)       # Handler para cuando cambia el estado de un contacto
+        self.add_event_handler("presence", self.request_handler)            # Handler para cuando se recibe una solicitud de amistad
+        self.add_event_handler("groupchat_message", self.group_message)     # Handler para cuando se recibe un mensaje de un grupo
 
         self.logged_in = False
         
@@ -195,20 +195,20 @@ class Server(slixmpp.ClientXMPP):
             print(f"Archivo: {nombre_archivo}")
             print("-------------------------")
 
-            file_data = base64.b64decode(contenido_archivo)
-            nombre_archivo = "recibido_" + nombre_archivo
+            file_data = base64.b64decode(contenido_archivo)                         # Decodificar el contenido del archivo
+            nombre_archivo = "recibido_" + nombre_archivo                           # Cambiar el nombre del archivo
 
             with open(nombre_archivo, "wb") as file:
-                file.write(file_data)
+                file.write(file_data)                                               # Escribir el contenido del archivo en el archivo
 
 
         elif msg['type'] == 'chat':
-            person = msg['from'].bare                                         # Obtener el emisor del mensaje
+            person = msg['from'].bare                                               # Obtener el emisor del mensaje
                 
-            if msg['type'] in ('chat', 'normal'):                               # Si el mensaje es de tipo chat o normal
-                table = prettytable.PrettyTable()                               # Crear una tabla para mostrar el mensaje
+            if msg['type'] in ('chat', 'normal'):                                   # Si el mensaje es de tipo chat o normal
+                table = prettytable.PrettyTable()                                   # Crear una tabla para mostrar el mensaje
                 table.field_names = ["Usuario", "Mensaje"]
-                table.add_row([person, msg['body']])                       # Agregar emisor y mensaje a la tabla
+                table.add_row([person, msg['body']])                                # Agregar emisor y mensaje a la tabla
                 
                 print("\n\n----- NUEVO MENSAJE -----")
                 print(table)
@@ -220,11 +220,11 @@ class Server(slixmpp.ClientXMPP):
     '''
 
     async def group_message(self, msg):
-        if msg['mucnick'] != self.boundjid.user:
+        if msg['mucnick'] != self.boundjid.user:                                    # Si el mensaje no fue enviado por el usuario actual
             print("\n\n----- MENSAJE DE GRUPO -----")
-            print(f"Grupo: {str(msg['from']).split('/')[0]}")
-            print(f"De: {msg['mucnick']}")
-            print(f"Mensaje: {msg['body']}")
+            print(f"Grupo: {str(msg['from']).split('/')[0]}")                       # Obtener el nombre del grupo
+            print(f"De: {msg['mucnick']}")                                          # Obtener el emisor del mensaje
+            print(f"Mensaje: {msg['body']}")                                        # Obtener el mensaje
             print("--------------------------------")
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -234,10 +234,10 @@ class Server(slixmpp.ClientXMPP):
 
     async def send_msg_to_user(self):
         print("\n----- ENVIAR MENSAJE A USUARIO -----")
-        recipient_jid = await self.solicitar_usuario()
-        user_input = await aioconsole.ainput("Mensaje: ")
+        recipient_jid = await self.solicitar_usuario()                               # Obtener el nombre de usuario receptor
+        user_input = await aioconsole.ainput("Mensaje: ")                            # Obtener el mensaje a enviar
 
-        self.send_message(mto=recipient_jid, mbody=user_input, mtype='chat')
+        self.send_message(mto=recipient_jid, mbody=user_input, mtype='chat')         # Enviar mensaje con librería slixmpp
         print(f"--> Mensaje enviado a {recipient_jid}.")
         print("----------------------")
  
@@ -247,23 +247,23 @@ class Server(slixmpp.ClientXMPP):
     '''
 
     async def send_group_message(self):
-        response = await self.plugin['xep_0030'].get_items(jid="conference.alumchat.xyz", node="")
+        response = await self.plugin['xep_0030'].get_items(jid="conference.alumchat.xyz", node="") # Obtener grupos publicos
 
         values = response['disco_items']['items']
         grupos = []
 
         for value in values:
-            grupos.append((value[0], value[2]))
+            grupos.append((value[0], value[2]))                                     # Se guarda nombre y JID del grupo
 
-        opcion = await self.seleccionar_grupo(grupos)
+        opcion = await self.seleccionar_grupo(grupos)                               # Seleccionar grupo al que se desea enviar el mensaje
         JID_grupo = grupos[opcion-1][0]
 
         await self.plugin['xep_0045'].join_muc(JID_grupo, self.boundjid.user)       # Se une al grupo, en caso de que no esté unido
 
         print("\n--> Escriba el mensaje que desea enviar al grupo.")
-        user_input = await aioconsole.ainput("Mensaje: ")
+        user_input = await aioconsole.ainput("Mensaje: ")                           # Obtener el mensaje a enviar
 
-        self.send_message(mto=JID_grupo, mbody=user_input, mtype='groupchat')
+        self.send_message(mto=JID_grupo, mbody=user_input, mtype='groupchat')       # Enviar mensaje con librería slixmpp
         print(f"--> Mensaje enviado a {grupos[opcion-1][0]}")
         print("----------------------")
 
@@ -274,23 +274,23 @@ class Server(slixmpp.ClientXMPP):
 
     async def send_file_to(self):
         print("\n----- ENVIAR ARCHIVO A USUARIO -----")
-        recipient_jid = await self.solicitar_usuario()
-        file_path = await aioconsole.ainput("Ingrese la ruta del archivo: ")
+        recipient_jid = await self.solicitar_usuario()                              # Obtener el nombre de usuario receptor
+        file_path = await aioconsole.ainput("Ingrese la ruta del archivo: ")        # Obtener la ruta del archivo
         file_name = file_path.split("/")[-1]
 
         # Intentar abrir el archivo
         file_data = None
         try:
             with open(file_path, "rb") as file:
-                file_data = file.read()
+                file_data = file.read()                                             # Leer el archivo
         except FileNotFoundError:
             print("\n--> Archivo no encontrado.")
             print("----------------------")
             return
         
-        file_data_base64 = base64.b64encode(file_data).decode('utf-8')
+        file_data_base64 = base64.b64encode(file_data).decode('utf-8')              # Codificar el archivo en base64
         
-        self.send_message(mto=recipient_jid, mbody=f"file_transfer_request:{file_name}:{file_data_base64}", mtype="chat")
+        self.send_message(mto=recipient_jid, mbody=f"file_transfer_request:{file_name}:{file_data_base64}", mtype="chat")   # Enviar mensaje con librería slixmpp
         file.close()
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -299,19 +299,19 @@ class Server(slixmpp.ClientXMPP):
     '''
 
     async def create_group(self):
-        nombre = await self.crear_grupo()
+        nombre = await self.crear_grupo()                                           # Obtener el nombre del grupo
         nombre = nombre.replace("@", "") + "@conference.alumchat.xyz"
 
-        await self.plugin['xep_0045'].join_muc(nombre, self.boundjid.user, password=None)
+        await self.plugin['xep_0045'].join_muc(nombre, self.boundjid.user, password=None)   # Crea el grupo al unirse a él
 
         #-----> Generado por ChatGPT para poner el grupo como público y persistente
-        form = await self.plugin['xep_0045'].get_room_config(nombre)
-        form['muc#roomconfig_publicroom'] = True
-        form['muc#roomconfig_persistentroom'] = True
-        await self.plugin['xep_0045'].set_room_config(nombre, form)
+        form = await self.plugin['xep_0045'].get_room_config(nombre)                # Obtener la configuración del grupo
+        form['muc#roomconfig_publicroom'] = True                                    # Poner el grupo como público
+        form['muc#roomconfig_persistentroom'] = True                                # Poner el grupo como persistente
+        await self.plugin['xep_0045'].set_room_config(nombre, form)                 # Actualizar la configuración del grupo
         #-------------------------------
 
-        await self.plugin['xep_0045'].join_muc(nombre, self.boundjid.user, password=None)
+        await self.plugin['xep_0045'].join_muc(nombre, self.boundjid.user, password=None)   # Unirse al grupo
 
         print(f"--> Grupo {nombre} creado.")
         print("----------------------")
@@ -325,10 +325,10 @@ class Server(slixmpp.ClientXMPP):
         # Si usuario envio solicitud de amistad
         if presence['type'] == 'subscribe':
             # Aceptar solicitud de amistad automáticamente
-            self.send_presence(pto=presence['from'], ptype='subscribed')
+            self.send_presence(pto=presence['from'], ptype='subscribed')                    # Aceptar solicitud de amistad
 
             print("\n\n----- SOLICITUD DE AMISTAD -----")
-            print(f"--> Se ha agregado a {presence['from']} a tus contactos.")
+            print(f"--> Se ha agregado a {presence['from']} a tus contactos.")              # Mostrar notificación
             print("--------------------------------") 
 
         # Si usuario rechazo solicitud de amistad
@@ -336,7 +336,7 @@ class Server(slixmpp.ClientXMPP):
             print("\n\n----- SOLICITUD DE AMISTAD -----")
             print(f"--> {presence['from']} ha rechazado tu solicitud de amistad / te eliminó de sus contactos.")
             print("--------------------------------") 
-            self.send_presence(pto=presence['from'], ptype='unsubscribe')
+            self.send_presence(pto=presence['from'], ptype='unsubscribe')                   # Eliminar de contactos si usuario rechazó solicitud o eliminó de contactos
 
     #-------------------------------------------------------------------------------------------------------------------
     '''
@@ -345,13 +345,13 @@ class Server(slixmpp.ClientXMPP):
 
     async def send_friend_request(self):
         print("\n\n----- AGREGAR CONTACTO -----")
-        recipient_jid = await self.solicitar_usuario()
+        recipient_jid = await self.solicitar_usuario()                                      # Obtener el nombre de usuario receptor
 
         if recipient_jid == self.boundjid.bare:
             print("\n--> No puedes agregarte a ti mismo como contacto.")
 
         else:
-            self.send_presence(pto=recipient_jid, ptype='subscribe')
+            self.send_presence(pto=recipient_jid, ptype='subscribe')                        # Enviar solicitud de amistad con librería slixmpp
             print(f"--> Se ha enviado una solicitud de contacto a {recipient_jid}.")
 
         print("----------------------------") 
@@ -425,7 +425,7 @@ class Server(slixmpp.ClientXMPP):
 
     async def user_contact_details(self):
         print("\n----- DETALLES DE CONTACTO -----")
-        recipient_jid = await self.solicitar_usuario()
+        recipient_jid = await self.solicitar_usuario()              # Obtener el nombre de usuario receptor
         print(f"--> Buscando detalles de {recipient_jid}...\n")
 
         await self.get_roster()
@@ -510,18 +510,18 @@ class Server(slixmpp.ClientXMPP):
     '''
 
     async def set_presence(self):
-        opcion = await self.mostrar_menu_estado()
+        opcion = await self.mostrar_menu_estado()                       # Mostrar el menú de mensaje de presencia
 
-        if opcion == 1:
+        if opcion == 1:                                                 # Si desea modificar el mensaje de presencia
             mensaje = await aioconsole.ainput("Ingrese el mensaje de presencia: ")
-            self.send_presence(pstatus=mensaje)
+            self.send_presence(pstatus=mensaje)                         # Enviar mensaje de presencia con librería slixmpp
 
             print("\n--> Mensaje de presencia modificado.")
 
-        elif opcion == 2:
-            estado = await self.solicitar_estado()
+        elif opcion == 2:                                               # Si desea modificar el estado
+            estado = await self.solicitar_estado()                      # Obtener el estado
             if estado == 1:
-                self.send_presence(pshow="chat")
+                self.send_presence(pshow="chat")                        # Enviar estado con librería slixmpp
             elif estado == 2:
                 self.send_presence(pshow="away")
             elif estado == 3:
@@ -548,18 +548,18 @@ class Server(slixmpp.ClientXMPP):
         iq['from'] = self.boundjid.user
     
         # ---> Generado por GitHub Copilot
-        query = ET.Element('{jabber:iq:register}query')
-        remove_element = ET.SubElement(query, 'remove')
+        query = ET.Element('{jabber:iq:register}query')                     # Crear elemento query para eliminar cuenta
+        remove_element = ET.SubElement(query, 'remove')                     # Crear elemento remove
         iq.append(query)
         # ------------------------------
 
         try:
-            response = await iq.send()
+            response = await iq.send()                                      # Enviar IQ con librería slixmpp
             print("Eliminando cuenta...")
             time.sleep(3)
 
-            if response['type'] == 'result':
-                self.disconnect()
+            if response['type'] == 'result':                                # Si se pudo eliminar la cuenta
+                self.disconnect()                                           # Desconectar del servidor
                 print("\n--> Cuenta eliminada. Hasta luego.")
                 exit()
             else:
